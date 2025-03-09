@@ -25,7 +25,8 @@ public class FiniteAutomaton {
         currentStates.add(q0);
         System.out.println("Starting At State(s): " + currentStates);
         for (char c : inputString.toCharArray()) {
-            Set<String> nextStates = new HashSet<>();
+            Set<String> nextStates;
+            nextStates = new HashSet<>();
 
             for (String state : currentStates) {
                 if (delta.containsKey(state) && delta.get(state).containsKey(c)) {
