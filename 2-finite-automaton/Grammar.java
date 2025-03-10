@@ -103,61 +103,22 @@ public class Grammar {
     public String classifyGrammar() {
         System.out.println("\n=== Classifying Grammar According to Chomsky Hierarchy ===");
 
-        boolean isType0 = true; // Type 0: Unrestricted Grammar (default)
-        boolean isType1 = true; // Type 1: Context-Sensitive Grammar
-        boolean isType2 = true; // Type 2: Context-Free Grammar
-        boolean isType3 = true; // Type 3: Regular Grammar
+        // Separate checks for each grammar type
+        boolean isType0 = true; // All grammars are at least Type 0
+        boolean isType1 = checkType1Grammar(); // |α| ≤ |β|
+        boolean isType2 = isType1 && checkType2Grammar(); // A ∈ V (single non-terminal on left)
+        boolean isType3 = isType2 && checkType3Grammar(); // A → aB or A → a
 
-        // Check each production rule
-        for (Map.Entry<Character, List<String>> entry : P.entrySet()) {
-            Character nonTerminal = entry.getKey();
-            for (String production : entry.getValue()) {
+        // Check if grammar is derived from an automaton
+        boolean isAutomatonDerived = checkIfAutomatonDerived();
 
-                // Check for empty string production (allowed in Type 2 and Type 3)
-                if (production.equals("ε")) {
-                    if (nonTerminal != S) {
-                        isType3 = false; // Regular grammars only allow ε from start symbol
-                    }
-                    continue;
-                }
-
-                // Type 1: Context-Sensitive Grammar (|α| ≤ |β| for each production α → β)
-                if (1 > production.length()) {
-                    isType1 = false;
-                    isType2 = false;
-                    isType3 = false;
-                }
-
-                // Type 2: Context-Free Grammar (A → α, where A is a single non-terminal)
-                // Already satisfied by our grammar format
-
-                // Type 3: Regular Grammar (A → aB or A → a, where A,B are non-terminals and a is terminal)
-                if (production.length() > 1) {
-                    // Check if first symbol is terminal
-                    char firstChar = production.charAt(0);
-
-                    if (!VT.contains(firstChar)) {
-                        isType3 = false;
-                    }
-
-                    // Check subsequent symbols (if any)
-                    for (int i = 1; i < production.length(); i++) {
-                        char currentChar = production.charAt(i);
-
-                        // For Type 3, only the last symbol can be non-terminal
-                        if (i < production.length() - 1 && VN.contains(currentChar)) {
-                            isType3 = false;
-                        }
-
-                        // Last symbol must be non-terminal in Type 3
-                        if (i == production.length() - 1 && !VN.contains(currentChar)) {
-                            isType3 = false;
-                        }
-                    }
-                }
-            }
+        // For a grammar derived from an automaton, it should be Type 3
+        if (isAutomatonDerived) {
+            isType3 = true;
+            System.out.println("Grammar is derived from finite automaton - classified as Type 3");
         }
 
+        // Determine the most specific grammar type
         String result;
         if (isType3) {
             result = "Type 3: Regular Grammar";
@@ -172,5 +133,110 @@ public class Grammar {
         System.out.println("Classification: " + result);
         System.out.println("=== End Of Classification ===\n");
         return result;
+    }
+
+    // Type 0: Unrestricted Grammar - α → β where α ≠ NULL (contains at least one non-terminal)
+    private boolean checkType0Grammar() {
+        // All our grammars are at least Type 0 because we use a map with non-terminal keys
+        return true;
+    }
+
+    // Type 1: Context-Sensitive Grammar - |α| ≤ |β|
+    // Exception: S → ε is allowed if S doesn't appear on the right side of any production
+    private boolean checkType1Grammar() {
+        boolean hasEpsilonRule = false;
+        boolean sAppearsOnRightSide = false;
+
+        // First check if S appears on any right-hand side
+        for (List<String> productions : P.values()) {
+            for (String production : productions) {
+                if (production.indexOf(S) >= 0) {
+                    sAppearsOnRightSide = true;
+                    break;
+                }
+            }
+            if (sAppearsOnRightSide) break;
+        }
+
+        // Check all productions
+        for (Map.Entry<Character, List<String>> entry : P.entrySet()) {
+            Character leftSide = entry.getKey(); // Single non-terminal
+
+            for (String rightSide : entry.getValue()) {
+                // Check for epsilon rule
+                if (rightSide.equals("ε")) {
+                    if (leftSide == S && !sAppearsOnRightSide) {
+                        // This is the S → ε exception case
+                        continue;
+                    } else {
+                        return false; // Not Type 1
+                    }
+                }
+
+                // For Type 1, |α| ≤ |β| must hold for all productions
+                // In our case, |α| is always 1 (single non-terminal)
+                if (rightSide.length() < 1) {
+                    return false; // Not Type 1 because |β| < |α|
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // Type 2: Context-Free Grammar - A ∈ V (left side is a single non-terminal)
+    private boolean checkType2Grammar() {
+        // This is automatically satisfied by our grammar representation
+        // which only allows single non-terminals on the left side
+        return true;
+    }
+
+    // Type 3: Regular Grammar - A → aB or A → a
+    private boolean checkType3Grammar() {
+        for (Map.Entry<Character, List<String>> entry : P.entrySet()) {
+            for (String production : entry.getValue()) {
+                // Allow ε production
+                if (production.equals("ε")) {
+                    continue;
+                }
+
+                // Check for A → a (single terminal)
+                if (production.length() == 1) {
+                    if (!VT.contains(production.charAt(0))) {
+                        return false; // Not of form A → a
+                    }
+                }
+                // Check for A → aB (terminal followed by non-terminal)
+                else if (production.length() == 2) {
+                    if (!VT.contains(production.charAt(0)) || !VN.contains(production.charAt(1))) {
+                        return false; // Not of form A → aB
+                    }
+                }
+                // Any other form means this is not Type 3
+                else {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // Check if grammar appears to be derived from a finite automaton
+    private boolean checkIfAutomatonDerived() {
+        // A grammar derived from an automaton should be Type 3 (regular)
+        // So first check if it's regular
+        if (!checkType3Grammar()) {
+            return false;
+        }
+
+        // Additionally, check for characteristic patterns of automaton-derived grammars:
+        // 1. Each non-terminal typically represents a state
+        // 2. Productions represent transitions between states
+
+        // For simplicity, we'll assume that if it's a regular grammar
+        // with consistent structure, it's automaton-derived
+
+        return true;
     }
 }

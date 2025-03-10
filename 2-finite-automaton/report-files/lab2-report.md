@@ -69,32 +69,132 @@ Variant 7
 
 ### Classify the Grammar Based on the Chomsky Hierarchy ###
 
-The classifyGrammar() method in the Grammar class checks the production rules of the grammar and classifies it according to the Chomsky hierarchy. It first assumes the grammar is regular (Type 3) and then checks if the production rules violate the constraints for regular grammars. For example, if a production rule has more than two symbols or contains a non-terminal in an invalid position, the grammar is downgraded to context-free (Type 2). If the grammar allows empty productions (ε) from non-start symbols, it is further downgraded to context-sensitive or unrestricted (Type 1 or 0). This method provides a clear and systematic way to classify grammars, which is essential for understanding their expressive power and complexity.
+
+The Chomsky hierarchy categorizes grammars into four types based on their production rules:
+
+Type 0: Unrestricted grammars (no restrictions).
+
+Type 1: Context-sensitive grammars (|α| ≤ |β|).
+
+Type 2: Context-free grammars (single non-terminal on the left side).
+
+Type 3: Regular grammars (A → aB or A → a).
+
+#### classifyGrammar() Method
+This method classifies the grammar by checking its production rules against the constraints of each grammar type.
 
 ```java
 public String classifyGrammar() {
-    boolean isType3 = true; // Regular Grammar
-    boolean isType2 = true; // Context-Free Grammar
+   boolean isType0 = checkType0Grammar(); // All grammars are at least Type 0
+   boolean isType1 = isType0 && checkType1Grammar(); // Context-sensitive
+   boolean isType2 = isType1 && checkType2Grammar(); // Context-free
+   boolean isType3 = isType2 && checkType3Grammar(); // Regular
 
-    for (Map.Entry<Character, List<String>> entry : P.entrySet()) {
-        for (String production : entry.getValue()) {
-            if (production.length() > 2 || (production.length() == 1 && !VT.contains(production.charAt(0)))) {
-                isType3 = false;
+   // Check if grammar is derived from an automaton
+   boolean isAutomatonDerived = checkIfAutomatonDerived();
+   if (isAutomatonDerived) {
+      isType3 = true;
+      System.out.println("Grammar is derived from finite automaton - classified as Type 3");
+   }
+
+   // Determine the most specific grammar type
+   String result;
+   if (isType3) {
+      result = "Type 3: Regular Grammar";
+   } else if (isType2) {
+      result = "Type 2: Context-Free Grammar";
+   } else if (isType1) {
+      result = "Type 1: Context-Sensitive Grammar";
+   } else {
+      result = "Type 0: Unrestricted Grammar";
+   }
+
+   System.out.println("Classification: " + result);
+   return result;
+} 
+```
+
+#### Helper Methods For Grammar Classification
+Checks if the grammar is at least Type 0 (Unrestricted). All grammars are Type 0 by default.
+```java
+private boolean checkType0Grammar() {
+    return true; // All grammars are at least Type 0
+}
+```
+
+#### checkType1Grammar()
+Checks if the grammar is Type 1 (Context-Sensitive). Ensures that for all productions α → β, |α| ≤ |β|. Exception: S → ε is allowed if S does not appear on the right side of any production.
+```java
+private boolean checkType1Grammar() {
+    boolean sAppearsOnRightSide = false;
+
+    // Check if S appears on any right-hand side
+    for (List<String> productions : P.values()) {
+        for (String production : productions) {
+            if (production.indexOf(S) >= 0) {
+                sAppearsOnRightSide = true;
+                break;
             }
-            if (production.length() == 0) {
-                isType3 = false;
-                isType2 = false;
+        }
+        if (sAppearsOnRightSide) break;
+    }
+
+    // Check all productions
+    for (Map.Entry<Character, List<String>> entry : P.entrySet()) {
+        Character leftSide = entry.getKey(); // Single non-terminal
+        for (String rightSide : entry.getValue()) {
+            if (rightSide.equals("ε")) {
+                if (leftSide != S || sAppearsOnRightSide) {
+                    return false; // Not Type 1
+                }
+            }
+            if (rightSide.length() < 1) {
+                return false; // Not Type 1 because |β| < |α|
             }
         }
     }
+    return true;
+}
+```
 
-    if (isType3) {
-        return "Type 3: Regular Grammar";
-    } else if (isType2) {
-        return "Type 2: Context-Free Grammar";
-    } else {
-        return "Type 1: Context-Sensitive Grammar or Type 0: Unrestricted Grammar";
+#### checkType2Grammar()
+Checks if the grammar is Type 2 (Context-Free). Ensures that the left side of every production is a single non-terminal.
+```java
+private boolean checkType2Grammar() {
+    return true; // Our grammar representation ensures this
+}
+```
+#### checkType3Grammar()
+Checks if the grammar is Type 3 (Regular). Ensures that productions are of the form A → aB or A → a, where A and B are non-terminals and a is a terminal.
+```java
+private boolean checkType3Grammar() {
+    for (Map.Entry<Character, List<String>> entry : P.entrySet()) {
+        for (String production : entry.getValue()) {
+            if (production.equals("ε")) {
+                continue; // Allow ε production
+            }
+            if (production.length() == 1) {
+                if (!VT.contains(production.charAt(0))) {
+                    return false; // Not of form A → a
+                }
+            } else if (production.length() == 2) {
+                if (!VT.contains(production.charAt(0)) || !VN.contains(production.charAt(1))) {
+                    return false; // Not of form A → aB
+                }
+            } else {
+                return false; // Invalid form
+            }
+        }
     }
+    return true;
+}
+```
+#### checkIfAutomatonDerived()
+Checks if the grammar is derived from a finite automaton. Automaton-derived grammars are always Type 3 (Regular).
+
+```java
+private boolean checkIfAutomatonDerived() {
+    return checkType3Grammar(); // Automaton-derived grammars are regular
 }
 ```
 
