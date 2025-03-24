@@ -1,0 +1,30 @@
+// This is a sample music file for testing the lexer
+// It contains various music notation elements
+
+// Define tempo
+\tempo=120
+
+// Define a simple C major scale
+c4 d4 e4 f4 | g4 a4 b4 c5
+
+// Use sharps and flats
+c#4 d#4 | bb4 f#4
+
+// Use different durations
+c2 d4 e8 f8 g4
+
+// Use dotted notes and rests
+c4. d8 r4 e4. f8
+
+// Use repeat sections
+|: c4 d4 e4 f4 :|
+
+// Define a melody variable
+melody = { g4 a4 b4 c5 }
+
+// Use predefined melody
+play(melody)
+
+// Use music functions
+\function(transpose, c, 2) d4
+\function(frequency, a, 4) e4 
