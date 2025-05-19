@@ -31,7 +31,7 @@ This 6th lab showcases a comprehensive music notation parser that builds upon my
 ### Core Components
 
 #### 1. Token Type Definition
-The implementation uses an enum to define all possible token types, making it easy to categorize and process different musical elements:
+I used an enum to define all possible token types, making it easy to categorize and process different musical elements. This enumeration serves as the foundation for our lexical analysis, providing clear categorization for each type of musical element that can appear in the input. The token types are organized into logical groups, which helps establish a clear mapping between input tokens and their semantic meaning. This organization enables efficient pattern matching during parsing while maintaining a clean separation between different types of musical elements. The structure makes the code more maintainable and easier to extend with new token types as needed.
 
 ```python
 class TokenType(Enum):
@@ -54,7 +54,7 @@ class TokenType(Enum):
 ```
 
 #### 2. AST Node Structure
-The base `ASTNode` class and its subclasses form the hierarchical structure of our AST:
+The base `ASTNode` class and its subclasses form the hierarchical structure of our AST. This implementation follows the Composite design pattern, where each node can contain child nodes, creating a tree structure that represents the musical composition. The base class provides common functionality that all node types inherit, including maintaining a reference to its parent for bidirectional traversal. The `add_child` method ensures proper parent-child relationships, while the `is_last_child` method plays a crucial role in tree visualization. Each node can store additional data through its optional value field, and type hints ensure type safety throughout the implementation.
 
 ```python
 class ASTNode:
@@ -75,7 +75,7 @@ class ASTNode:
 ```
 
 #### 3. Tree Visualization
-The AST includes a sophisticated tree visualization system:
+The AST includes a sophisticated tree visualization system that creates a human-readable representation of the musical structure. This visualization is crucial for debugging and understanding the parsed structure. The system uses ASCII characters to create a tree-like structure, with proper indentation to show hierarchy. It employs different characters for intermediate and final nodes, maintaining vertical lines to show parent-child relationships. The visualization includes node values when present and recursively processes all children to build the complete tree representation.
 
 ```python
 def __str__(self, level: int = 0) -> str:
@@ -102,7 +102,7 @@ def __str__(self, level: int = 0) -> str:
 ```
 
 #### 4. Parser Implementation
-The parser uses a recursive descent approach to build the AST:
+The parser uses a recursive descent approach to build the AST. This implementation follows the classic recursive descent parsing pattern, where each grammar rule is implemented as a method in the parser class. The parser maintains a current position in the token stream and tracks the current musical section and bar. It uses type checking to determine how to integrate new nodes and automatically creates bars when needed. The implementation handles the hierarchical structure of musical notation, ensuring that each element is placed in its proper context within the tree.
 
 ```python
 class Parser:
@@ -138,7 +138,14 @@ def parse(self) -> ASTNode:
     return self.root
 ```
 
-The parser handles different types of statements:
+Key aspects of the parser:
+- Maintains a current position in the token stream
+- Tracks the current musical section and bar
+- Uses type checking to determine how to integrate new nodes
+- Automatically creates bars when needed
+- Handles the hierarchical structure of musical notation
+
+The parser handles different types of statements through a pattern-matching system that identifies various musical elements. It delegates to specialized parsing methods for each type, maintaining a clean separation of concerns for different musical elements. When encountering unrecognized tokens, it returns None, allowing the parser to continue processing the rest of the input.
 
 ```python
 def parse_statement(self) -> Optional[ASTNode]:
@@ -158,7 +165,7 @@ def parse_statement(self) -> Optional[ASTNode]:
 ```
 
 #### 5. Note Parsing
-The parser handles notes with their properties:
+The parser handles notes with their properties, implementing a detailed parsing strategy for musical notes. The system extracts the basic pitch from the token and sets sensible defaults for octave and duration. It handles optional octave specifications and processes duration values, including support for dotted notes. The implementation is designed to support future extensions with modifiers while creating complete note nodes with all necessary properties.
 
 ```python
 def parse_note(self) -> NoteNode:
@@ -182,7 +189,7 @@ def parse_note(self) -> NoteNode:
 ```
 
 #### 6. Error Handling
-The parser includes robust error handling:
+The parser includes robust error handling to gracefully handle malformed input. The system maintains the parser's position for potential recovery and handles missing repeat endings gracefully. It preserves the parse state for error recovery and returns None for invalid structures, allowing the parser to continue processing after encountering errors. This approach ensures that the parser can handle various edge cases while maintaining its ability to process valid input.
 
 ```python
 def parse_repeat(self) -> RepeatNode:
